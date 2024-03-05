@@ -2,28 +2,45 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
 use App\Repository\PollRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: PollRepository::class)]
+#[ApiResource(
+    operations: [
+        new Get(normalizationContext: ['groups' => 'poll:item']),
+        new GetCollection(normalizationContext: ['groups' => 'poll:list']),
+    ],
+    order: ['createdAt' => 'DESC'],
+    paginationEnabled: false,
+)]
 class Poll
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['poll:item', 'poll:list'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 510)]
+    #[Groups(['poll:item', 'poll:list'])]
     private ?string $question = null;
 
     #[ORM\Column(type: Types::ARRAY)]
+    #[Groups(['poll:item', 'poll:list'])]
     private array $options = [];
 
     #[ORM\Column(type: Types::ARRAY, nullable: true)]
+    #[Groups(['poll:item', 'poll:list'])]
     private ?array $votes = null;
 
     #[ORM\Column]
+    #[Groups(['poll:item', 'poll:list'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     public function getId(): ?int
