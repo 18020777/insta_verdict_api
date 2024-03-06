@@ -3,8 +3,6 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
 use App\Repository\PollRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -12,10 +10,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: PollRepository::class)]
 #[ApiResource(
-    operations: [
-        new Get(normalizationContext: ['groups' => 'poll:item']),
-        new GetCollection(normalizationContext: ['groups' => 'poll:list']),
-    ],
     order: ['createdAt' => 'DESC'],
     paginationEnabled: false,
 )]
@@ -43,6 +37,11 @@ class Poll
     #[Groups(['poll:item', 'poll:list'])]
     private ?\DateTimeImmutable $createdAt = null;
 
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -68,7 +67,7 @@ class Poll
     public function setOptions(array $options): static
     {
         $this->options = $options;
-
+        $this->initializeVotes();
         return $this;
     }
 
@@ -79,7 +78,11 @@ class Poll
 
     public function setVotes(?array $votes): static
     {
-        $this->votes = $votes;
+        if ($this->isNew()) {
+            $this->initializeVotes();
+        } else {
+            $this->votes = $votes;
+        }
 
         return $this;
     }
@@ -91,8 +94,22 @@ class Poll
 
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
-        $this->createdAt = $createdAt;
-
+        if ($this->isNew()) {
+            $this->createdAt = new \DateTimeImmutable();
+        } else {
+            $this->createdAt = $createdAt;
+        }
         return $this;
     }
+
+    private function initializeVotes(): void
+    {
+        $this->votes = array_fill(0, count($this->options), 0);
+    }
+
+    public function isNew(): bool
+    {
+        return $this->id === null;
+    }
+
 }
