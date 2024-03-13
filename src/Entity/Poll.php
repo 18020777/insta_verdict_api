@@ -3,13 +3,28 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
 use App\Repository\PollRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PollRepository::class)]
 #[ApiResource(
+    operations: [
+        new Get(
+            normalizationContext: ['groups' => 'poll:read']
+        ),
+        new GetCollection(normalizationContext: ['groups' => 'poll:read']),
+        new Post(
+            normalizationContext: ['groups' => 'poll:read'],
+            denormalizationContext: ["groups" => 'poll:write']
+        )
+    ],
     order: ['createdAt' => 'DESC'],
     paginationEnabled: false,
 )]
@@ -18,28 +33,32 @@ class Poll
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['poll:item', 'poll:list'])]
+    #[Groups(['poll:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 510)]
-    #[Groups(['poll:item', 'poll:list'])]
+    #[Groups(['poll:read', 'poll:write'])]
+    #[Assert\NotBlank]
+    #[Assert\NoSuspiciousCharacters]
+    #[Assert\Length(min: 3)]
     private ?string $question = null;
 
-    #[ORM\Column(type: Types::ARRAY)]
-    #[Groups(['poll:item', 'poll:list'])]
+    #[ORM\Column(type: Types::JSON)]
+    #[Groups(['poll:read', 'poll:write'])]
+    #[Assert\Count(min: 2, max: 10)]
     private array $options = [];
 
-    #[ORM\Column(type: Types::ARRAY, nullable: true)]
-    #[Groups(['poll:item', 'poll:list'])]
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['poll:read'])]
     private ?array $votes = null;
 
     #[ORM\Column]
-    #[Groups(['poll:item', 'poll:list'])]
-    private ?\DateTimeImmutable $createdAt = null;
+    #[Groups(['poll:read'])]
+    private ?DateTimeImmutable $createdAt;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -87,15 +106,15 @@ class Poll
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         if ($this->isNew()) {
-            $this->createdAt = new \DateTimeImmutable();
+            $this->createdAt = new DateTimeImmutable();
         } else {
             $this->createdAt = $createdAt;
         }
@@ -107,7 +126,7 @@ class Poll
         $this->votes = array_fill(0, count($this->options), 0);
     }
 
-    public function isNew(): bool
+    private function isNew(): bool
     {
         return $this->id === null;
     }
