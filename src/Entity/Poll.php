@@ -43,12 +43,12 @@ class Poll
     #[Assert\Length(min: 3)]
     private ?string $question = null;
 
-    #[ORM\Column(type: Types::JSON)]
+    #[ORM\Column(type: Types::ARRAY)]
     #[Groups(['poll:read', 'poll:write'])]
     #[Assert\Count(min: 2, max: 10)]
     private array $options = [];
 
-    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[ORM\Column(type: Types::ARRAY, nullable: true)]
     #[Groups(['poll:read'])]
     private ?array $votes = null;
 
